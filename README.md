@@ -51,7 +51,7 @@ A machine learning system for predicting stock market trends using multiple neur
    pip install -r requirements.txt
    ```
 
-## Quick Start
+## Try It
 
 Run the complete demonstration:
 
@@ -67,37 +67,3 @@ This will:
 5. Execute a trading strategy
 6. Generate performance reports
 7. Create visualizations for stock data and trading results
-
-## Technical Details
-
-### Neural Network Architectures
-
-1. **Dense Neural Network**
-   - Multiple hidden layers with ReLU activation
-   - Batch normalization and dropout for regularization
-   - L2 regularization to prevent overfitting
-
-2. **LSTM Network**
-   - Long Short-Term Memory layers for temporal dependencies
-   - Dense layers for final classification
-
-3. **Attention Network**
-   - Multi-head attention mechanisms
-   - Transformer blocks for pattern learning
-   - Global average pooling for feature aggregation
-
-### Feature Engineering
-
-The system creates features including:
-- **Price-based**: Returns, momentum, volatility measures
-- **Technical**: RSI, MACD, Bollinger Bands, Stochastic
-- **Volume**: Volume ratios, moving averages
-- **Statistical**: Rolling mean, std, skewness, kurtosis
-- **Temporal**: Day of week, month, quarter effects
-
-### Risk Management
-
-- **Position Sizing**: Fixed risk per trade
-- **Portfolio Limits**: Maximum concurrent positions
-- **Stop Loss**: Automatic position closure at loss threshold
-- **Take Profit**: Automatic position closure at profit target
