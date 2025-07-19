@@ -142,12 +142,12 @@ class BaseModel:
         
         return metrics
         
-    def plot_training_history(self, figsize: Tuple[int, int] = (15, 5)):
+    def plot_training_history(self, figsize: Tuple[int, int] = (12, 5)):
         """Plot training history."""
         if self.history is None:
             raise ValueError("No training history available")
             
-        fig, axes = plt.subplots(1, 3, figsize=figsize)
+        fig, axes = plt.subplots(1, 2, figsize=figsize)
         
         # Loss
         axes[0].plot(self.history.history['loss'], label='Training Loss')
@@ -166,15 +166,6 @@ class BaseModel:
         axes[1].set_xlabel('Epoch')
         axes[1].set_ylabel('Accuracy')
         axes[1].legend()
-        
-        # Learning rate
-        if 'lr' in self.history.history:
-            axes[2].plot(self.history.history['lr'], label='Learning Rate')
-            axes[2].set_title('Learning Rate')
-            axes[2].set_xlabel('Epoch')
-            axes[2].set_ylabel('Learning Rate')
-            axes[2].set_yscale('log')
-            axes[2].legend()
         
         plt.tight_layout()
         plt.show()

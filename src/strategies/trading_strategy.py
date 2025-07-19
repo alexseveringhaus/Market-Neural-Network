@@ -63,14 +63,23 @@ class BaseTradingStrategy:
         """
         signals = np.zeros_like(predictions)
         
-        # More aggressive signal generation
-        # Long signals for predictions > 0.5 (bullish)
-        long_mask = predictions > 0.5
+        # Balanced signal generation with moderate thresholds
+        # Long signals for bullish predictions
+        long_mask = predictions > 0.53  # 53% threshold
         signals[long_mask] = 1
         
-        # Short signals for predictions < 0.5 (bearish)
-        short_mask = predictions < 0.5
+        # Short signals for bearish predictions
+        short_mask = predictions < 0.47  # 47% threshold
         signals[short_mask] = -1
+        
+        # Simplified trend confirmation - less restrictive
+        for i in range(3, len(signals)):
+            if signals[i] != 0:
+                # Check if signal aligns with recent trend (last 3 days)
+                recent_trend = 1 if predictions[i-3:i].mean() > 0.5 else -1
+                # Only cancel if strongly against trend (not just slightly)
+                if abs(predictions[i] - 0.5) < 0.05 and signals[i] != recent_trend:
+                    signals[i] = 0
         
         return signals
         
@@ -96,19 +105,23 @@ class BaseTradingStrategy:
         if signal == 0:
             return 0
             
-        # Kelly Criterion for position sizing
-        win_rate = 0.55  # Estimated win rate
-        avg_win = 0.02   # Average win percentage
-        avg_loss = 0.015 # Average loss percentage
-        
-        kelly_fraction = (win_rate * avg_win - (1 - win_rate) * avg_loss) / avg_win
-        
-        # Adjust for volatility
-        volatility_adjustment = 1 / (1 + volatility)
-        
-        # Calculate position size
+        # Conservative position sizing with volatility adjustment
+        # Base position size on risk per trade
         risk_amount = self.current_capital * risk_per_trade
-        position_value = risk_amount * kelly_fraction * volatility_adjustment
+        
+        # Volatility adjustment - less restrictive
+        volatility_adjustment = max(0.6, 1 / (1 + volatility * 5))  # Minimum 60% of normal size (was 30%)
+        
+        # Market condition adjustment - less restrictive
+        recent_trades = [t for t in self.trades[-3:] if t.exit_date is not None]
+        if recent_trades:
+            recent_losses = sum(1 for t in recent_trades if t.pnl < 0)
+            loss_adjustment = max(0.7, 1 - (recent_losses / len(recent_trades)) * 0.3)  # Minimum 70% (was 50%)
+        else:
+            loss_adjustment = 1.0
+        
+        # Calculate final position size
+        position_value = risk_amount * volatility_adjustment * loss_adjustment
         
         return position_value / price
         
@@ -236,6 +249,18 @@ class MLTradingStrategy(BaseTradingStrategy):
                 
                 if signal != 0:
                     volatility = row['Volatility'] if not pd.isna(row['Volatility']) else 0.02
+                    
+                    # Market condition filter - less restrictive volatility filter
+                    if volatility > 0.08:  # Skip trades if volatility > 8% (was 5%)
+                        continue
+                    
+                    # Check for recent losses - pause trading after consecutive losses
+                    recent_trades = [t for t in self.trades[-5:] if t.exit_date is not None]
+                    if len(recent_trades) >= 5:
+                        recent_losses = sum(1 for t in recent_trades if t.pnl < 0)
+                        if recent_losses >= 5:  # Pause after 5 consecutive losses (was 3)
+                            continue
+                    
                     position_size = self.calculate_position_size(
                         signal, row['Close'], volatility, self.risk_per_trade
                     )
@@ -270,22 +295,38 @@ class MLTradingStrategy(BaseTradingStrategy):
         )
         
     def _check_exit_conditions(self, date: pd.Timestamp, current_price: float):
-        """Check stop loss and take profit conditions."""
+        """Check stop loss and take profit conditions with dynamic adjustments."""
         for trade in self.trades:
             if trade.exit_date is None:
+                # Calculate dynamic stop loss based on volatility
+                # Get recent volatility for this trade
+                trade_duration = (date - trade.entry_date).days
+                if trade_duration > 0:
+                    # Adjust stop loss based on time in trade and volatility
+                    time_adjustment = min(1.5, 1 + trade_duration * 0.02)  # Increase stop loss over time
+                    dynamic_stop_loss = self.stop_loss * time_adjustment
+                else:
+                    dynamic_stop_loss = self.stop_loss
+                
                 if trade.side == 'long':
                     # Stop loss
-                    if current_price <= trade.entry_price * (1 - self.stop_loss):
+                    if current_price <= trade.entry_price * (1 - dynamic_stop_loss):
                         self.close_position(date, current_price, trade)
                     # Take profit
                     elif current_price >= trade.entry_price * (1 + self.take_profit):
                         self.close_position(date, current_price, trade)
+                    # Time-based exit - close if trade is open too long
+                    elif trade_duration > 60:  # Close after 60 days (was 30)
+                        self.close_position(date, current_price, trade)
                 else:  # short
                     # Stop loss
-                    if current_price >= trade.entry_price * (1 + self.stop_loss):
+                    if current_price >= trade.entry_price * (1 + dynamic_stop_loss):
                         self.close_position(date, current_price, trade)
                     # Take profit
                     elif current_price <= trade.entry_price * (1 - self.take_profit):
+                        self.close_position(date, current_price, trade)
+                    # Time-based exit - close if trade is open too long
+                    elif trade_duration > 60:  # Close after 60 days (was 30)
                         self.close_position(date, current_price, trade)
                         
     def _close_all_positions(self, date: pd.Timestamp, price: float):

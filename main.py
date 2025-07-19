@@ -183,14 +183,14 @@ def main():
         test_data = data.iloc[len(X_train):len(X_train) + len(X_test)].copy()
         test_data['Predictions'] = y_pred_ensemble.flatten()
         
-        # Initialize trading strategy
+        # Initialize trading strategy with balanced parameters
         strategy = MLTradingStrategy(
             initial_capital=INITIAL_CAPITAL,
-            confidence_threshold=0.55,  # Balanced threshold
-            risk_per_trade=0.03,  # Moderate risk per trade
-            max_positions=4,  # Reasonable number of positions
-            stop_loss=0.025,  # Tight stop loss
-            take_profit=0.075  # Reasonable take profit
+            confidence_threshold=0.58,  # Lower threshold to allow more trades
+            risk_per_trade=0.025,  # Slightly higher risk per trade
+            max_positions=3,  # Allow more positions
+            stop_loss=0.025,  # Slightly wider stop loss
+            take_profit=0.05  # Lower take profit for more realistic targets
         )
         
         # Run strategy
