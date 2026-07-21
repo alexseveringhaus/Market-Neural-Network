@@ -1,36 +1,35 @@
 # Market Neural Network - Stock Market Prediction System
 
-A machine learning system for predicting stock market trends using multiple neural network architectures, feature engineering, and a simulated trading strategy. The project demonstrates loading and processing stock data, training 3 neural network models, combining their predictions in an ensemble, and simulating a trading strategy based on those predictions. Performance is evaluated using common financial metrics, and results are visualized.
+An end-to-end pipeline that tests whether neural networks can predict next-day stock direction from engineered technical features: data loading, 4 model architectures (Dense, LSTM, Attention/Transformer, Ensemble), a backtested trading strategy with risk management, and a full performance report against a buy-and-hold benchmark.
 
-## Features
+**Tech stack:** Python · TensorFlow/Keras · scikit-learn · pandas · yfinance · ta
 
-### Neural Network Architectures
-- **Dense Neural Networks** with regularization and dropout
-- **LSTM Networks** for time series modeling
-- **Attention Mechanisms** with transformer blocks
-- **Ensemble Models** combining multiple architectures
+## Results
 
-### Feature Engineering
-- **Technical Indicators**: RSI, MACD, Bollinger Bands, Stochastic, Williams %R, ATR
-- **Price-based Features**: Momentum, volatility, skewness, kurtosis
-- **Volume Analysis**: Volume ratios, moving averages
-- **Time-based Features**: Day of week, month, quarter effects
-- **Lag Features**: Multiple time-lagged variables
+Trained on AAPL daily data (2022-01-01 to 2024-01-01), 56 engineered features (technical indicators, price/volume stats, lagged and time-based features), evaluated on a held-out 20% test split:
 
-### Trading Strategy
-- **Machine Learning-based Signals** with confidence thresholds
-- **Risk Management**: Fixed risk per trade, stop loss, and take profit
-- **Performance Metrics**: Sharpe ratio, Sortino ratio, Calmar ratio, Max Drawdown
+| Model | Accuracy | Precision | Recall | F1 | AUC-ROC |
+|-------|----------|-----------|--------|-----|---------|
+| Dense | 0.491 | 0.588 | 0.317 | 0.412 | 0.520 |
+| LSTM | 0.446 | 0.522 | 0.190 | 0.279 | 0.497 |
+| Attention | 0.411 | 0.333 | 0.048 | 0.083 | 0.500 |
+| Ensemble | 0.464 | 0.571 | 0.190 | 0.286 | 0.511 |
 
-### Evaluation
-- **Performance Analysis**: Alpha, Beta, Information ratio, Upside/Downside capture
-- **Trade Analysis**: Win rate, profit factor, consecutive wins/losses
-- **Risk Metrics**: Maximum drawdown
+**None of the models beat chance-level prediction (AUC ≈ 0.50) on held-out data**, despite training accuracy climbing to 100% for several of them — a clear overfitting signal given ~340 training samples and 56 features. Backtesting the ensemble's trading signals produced a +0.77% return over the test window versus **+2.38% for simple buy-and-hold** — the strategy underperformed the market it was trying to beat.
 
-### Visualizations
-- **Stock and Technical Indicator Plots**
-- **Trading Strategy Performance Plots**
-- **Trade Analysis Visualizations**
+This isn't a surprising result — daily-direction prediction from technical indicators alone is a genuinely hard (arguably close to impossible) problem, and the negative result here is more informative than a cherry-picked positive one would be. If I revisited this, I'd prioritize:
+- A longer history and more tickers/sectors to shrink the overfitting gap
+- Walk-forward validation instead of a single train/test split, given how noisy financial time series are
+- Regressing toward simpler baselines (e.g. logistic regression on a handful of features) before adding architectural complexity that the data can't support
+
+## Project Structure
+
+- `main.py` — orchestrates data loading, training, evaluation, backtesting, and reporting
+- `src/data/data_loader.py` — yfinance download + feature engineering + time-series splitting
+- `src/models/neural_networks.py` — Dense, LSTM, Attention, and Ensemble model classes
+- `src/strategies/trading_strategy.py` — signal-based trading strategy with stop loss/take profit
+- `src/utils/metrics.py` — classification and portfolio performance metrics
+- `src/visualization/plots.py` — stock, training, and strategy plots
 
 ## Installation
 
