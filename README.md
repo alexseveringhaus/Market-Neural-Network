@@ -2,7 +2,7 @@
 
 An end-to-end pipeline that tests whether neural networks can predict next-day stock direction from engineered technical features: data loading, 4 model architectures (Dense, LSTM, Attention/Transformer, Ensemble), a backtested trading strategy with risk management, and a full performance report against a buy-and-hold benchmark.
 
-**Tech stack:** Python · TensorFlow/Keras · scikit-learn · pandas · yfinance · ta
+**Tech stack:** Python · TensorFlow/Keras · scikit-learn · pandas · yfinance
 
 ## Results
 
